@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from web_server.server import run_server
+from server import run_server
 
 
 def main():

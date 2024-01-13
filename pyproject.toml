@@ -5,7 +5,6 @@ description = ""
 authors = ["inna-tuzhikova <inna-tuzhikova@github.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "web_server"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

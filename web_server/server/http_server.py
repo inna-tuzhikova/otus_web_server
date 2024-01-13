@@ -1,13 +1,14 @@
 import socket
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
-from web_server.server.handler import BaseHTTPHandler, StaticHandler
-from web_server.server.protocol import (
+from server.handler import BaseHTTPHandler, StaticHandler
+from server.protocol import (
+    HTTP500InternalServerError,
+    HTTPError,
     HTTProtocol,
     Request,
     Response,
-    HTTP500InternalServerError, HTTPError
 )
 
 

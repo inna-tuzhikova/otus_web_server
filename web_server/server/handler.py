@@ -1,16 +1,16 @@
 import mimetypes
 from pathlib import Path
 
-from web_server.server.protocol import (
-    Response,
+from server.protocol import (
     HTTP200OKResponse,
-    HTTPError,
+    HTTP403Forbidden,
     HTTP404NotFound,
     HTTP405MethodNotAllowed,
     HTTP500InternalServerError,
-    HTTP403Forbidden,
+    HTTPError,
+    HTTPMethod,
     Request,
-    HTTPMethod
+    Response,
 )
 
 
