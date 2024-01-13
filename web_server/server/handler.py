@@ -5,29 +5,29 @@ from web_server.server.protocol import (
     HTTP405MethodNotAllowed,
     HTTP500InternalServerError,
     Request,
-    Method, HTTPError
+    HTTPMethod, HTTPError
 )
 
 
 class BaseHTTPHandler:
     def __call__(self, request: Request) -> Response:
-        if request.method == Method.OPTIONS:
+        if request.method == HTTPMethod.OPTIONS:
             handler = self.options
-        elif request.method == Method.GET:
+        elif request.method == HTTPMethod.GET:
             handler = self.get
-        elif request.method == Method.HEAD:
+        elif request.method == HTTPMethod.HEAD:
             handler = self.head
-        elif request.method == Method.POST:
+        elif request.method == HTTPMethod.POST:
             handler = self.post
-        elif request.method == Method.PUT:
+        elif request.method == HTTPMethod.PUT:
             handler = self.put
-        elif request.method == Method.PATCH:
+        elif request.method == HTTPMethod.PATCH:
             handler = self.patch
-        elif request.method == Method.DELETE:
+        elif request.method == HTTPMethod.DELETE:
             handler = self.delete
-        elif request.method == Method.TRACE:
+        elif request.method == HTTPMethod.TRACE:
             handler = self.trace
-        elif request.method == Method.CONNECT:
+        elif request.method == HTTPMethod.CONNECT:
             handler = self.connect
         else:
             handler = self.unknown_method_handler
@@ -87,7 +87,11 @@ class StaticHandler(BaseHTTPHandler):
         self._document_root = document_root
 
     def get(self, request: Request) -> Response:
-        pass
+        return Response(
+            status=200,
+            reason='OK',
+            body=b'Hello world!'
+        )
 
     def head(self, request: Request) -> Response:
         pass

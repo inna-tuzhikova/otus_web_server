@@ -3,8 +3,12 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from web_server.server.handler import BaseHTTPHandler, StaticHandler
-from web_server.server.protocol import HTTProtocol, Request, Response, \
-    HTTP500InternalServerError
+from web_server.server.protocol import (
+    HTTProtocol,
+    Request,
+    Response,
+    HTTP500InternalServerError, HTTPError
+)
 
 
 class HTTPServer:
@@ -28,10 +32,11 @@ class HTTPServer:
             self._check_document_root()
             self._server_sock = self._create_server_socket()
             self._thread_pool = ThreadPoolExecutor(max_workers=self._workers)
-            self._static_handler = StaticHandler()
+            self._static_handler = StaticHandler(self._document_root)
 
             while True:
                 client_sock = self._accept_client_connection()
+                print('Got new client!')
                 self._thread_pool.submit(self._serve_client, client_sock)
         else:
             raise RuntimeError('Server is already running')
@@ -69,7 +74,9 @@ class HTTPServer:
         try:
             rfile = client_sock.makefile('rb')
             request = HTTProtocol.get_request(rfile)
+            print(f'Request is {request}')
             response = self._handle_request(request)
+            print(f'Response is {response}')
             self._send_response(response, client_sock)
         except ConnectionResetError:
             client_sock = None
@@ -95,10 +102,17 @@ class HTTPServer:
         HTTProtocol.send_response(response, wfile)
 
     def _send_error(self, err: Exception, client_sock: socket.socket) -> None:
-        err_500 = HTTP500InternalServerError(body=str(err))
-        response = Response(
-            status=err_500.status,
-            reason=err_500.reason,
-            body=err_500.body
-        )
+        if isinstance(err, HTTPError):
+            response = Response(
+                status=err.status,
+                reason=err.reason,
+                body=err.body
+            )
+        else:
+            err_500 = HTTP500InternalServerError(body=str(err))
+            response = Response(
+                status=err_500.status,
+                reason=err_500.reason,
+                body=err_500.body
+            )
         self._send_response(response, client_sock)
