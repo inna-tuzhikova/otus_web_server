@@ -63,6 +63,8 @@ class HTTPServer:
             type=socket.SOCK_STREAM,
             proto=0
         )
+        result.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
         result.bind((self._host, self._port))
         result.listen()
         return result

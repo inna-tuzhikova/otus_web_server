@@ -1,5 +1,7 @@
+import datetime
 import mimetypes
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 from server.protocol import (
     HTTP200OKResponse,
@@ -16,6 +18,8 @@ from server.protocol import (
 
 class BaseHTTPHandler:
     def __call__(self, request: Request) -> Response:
+        parsed_uri = urlparse(request.uri)
+        query = parse_qs(parsed_uri.query)
         if request.method == HTTPMethod.OPTIONS:
             handler = self.options
         elif request.method == HTTPMethod.GET:
@@ -38,7 +42,7 @@ class BaseHTTPHandler:
             handler = self.unknown_method_handler
 
         try:
-            response = handler(request)
+            response = handler(request, unquote(parsed_uri.path), query)
         except HTTPError as e:
             response = Response(
                 status=e.status,
@@ -54,34 +58,84 @@ class BaseHTTPHandler:
             )
         return response
 
-    def options(self, request: Request) -> Response:
+    def options(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def get(self, request: Request) -> Response:
+    def get(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def head(self, request: Request) -> Response:
+    def head(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def post(self, request: Request) -> Response:
+    def post(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def put(self, request: Request) -> Response:
+    def put(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def patch(self, request: Request) -> Response:
+    def patch(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def delete(self, request: Request) -> Response:
+    def delete(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def trace(self, request: Request) -> Response:
+    def trace(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def connect(self, request: Request) -> Response:
+    def connect(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed
 
-    def unknown_method_handler(self, request: Request) -> Response:
+    def unknown_method_handler(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
         raise HTTP405MethodNotAllowed(
             body=f'Unknown method: {request.method.value}'
         )
@@ -89,37 +143,39 @@ class BaseHTTPHandler:
 
 class StaticHandler(BaseHTTPHandler):
     def __init__(self, document_root: Path):
-        self._document_root = document_root.absolute()
+        self._document_root = document_root.resolve()
 
-    def get(self, request: Request) -> Response:
-        path = (self._document_root / request.uri.lstrip('/')).absolute()
+    def get(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
+        return self._get_file_response(uri, need_body=True)
+
+    def head(
+        self,
+        request: Request,
+        uri: str,
+        query: dict[str, list]
+    ) -> Response:
+        return self._get_file_response(uri, need_body=False)
+
+    def _get_file_response(self, uri: str, need_body: bool):
+        end_slash = uri.endswith('/')
+        path = (self._document_root / uri.lstrip('/')).resolve()
         if not self._is_in_root(path):
             raise HTTP403Forbidden
         if not path.exists():
             raise HTTP404NotFound
         if path.is_dir():
-            return self._file_response(path / 'index.html')
+            return self._prepare_file_response(path / 'index.html', need_body)
         elif path.is_file():
-            return self._file_response(path)
+            if end_slash:
+                raise HTTP404NotFound
+            return self._prepare_file_response(path, need_body)
         else:
             raise HTTP404NotFound
-
-    def _file_response(self, path: Path):
-        if path.is_file():
-            with open(path, 'rb') as f:
-                body = f.read()
-            content_type = mimetypes.guess_type(path)[0] or 'text/html'
-            return HTTP200OKResponse(
-                body=body,
-                headers={
-                    'Content-type': content_type
-                }
-            )
-        else:
-            raise HTTP404NotFound
-
-    def head(self, request: Request) -> Response:
-        return HTTP200OKResponse()
 
     def _is_in_root(self, path: Path):
         result = True
@@ -128,3 +184,35 @@ class StaticHandler(BaseHTTPHandler):
         except ValueError:
             result = False
         return result
+
+    def _prepare_file_response(self, path: Path, need_body: bool):
+        if path.is_file():
+            if need_body:
+                with open(path, 'rb') as f:
+                    body = f.read()
+            else:
+                body = None
+            return HTTP200OKResponse(
+                body=body,
+                headers=self._get_file_headers(path, body)
+            )
+        else:
+            raise HTTP404NotFound
+
+    def _get_file_headers(
+        self,
+        path: Path,
+        body: bytes | None
+    ) -> dict[str, str]:
+        content_type = mimetypes.guess_type(path)[0] or 'text/html'
+        headers = {
+            'Date': datetime.datetime.utcnow().isoformat(),
+            'Content-Length': (
+                path.stat().st_size
+                if body is None
+                else len(body)
+            ),
+            'Content-Type': content_type,
+            'Connection': 'close'
+        }
+        return headers

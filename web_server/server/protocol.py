@@ -132,14 +132,17 @@ class HTTProtocol:
             f'\r\n'
         )
         wfile.write(starting_line.encode(HTTProtocol.META_ENCODING))
-
-        if response.headers:
-            for k, v in response.headers.items():
-                header_line = f'{k}: {v}\r\n'
-                wfile.write(header_line.encode(HTTProtocol.META_ENCODING))
+        if not response.headers:
+            response.headers = dict()
+        response.headers['Server'] = 'python'
+        for k, v in response.headers.items():
+            header_line = f'{k}: {v}\r\n'
+            wfile.write(header_line.encode(HTTProtocol.META_ENCODING))
 
         wfile.write(b'\r\n')
         if response.body:
+            if isinstance(response.body, str):
+                response.body = response.body.encode(HTTProtocol.META_ENCODING)
             wfile.write(response.body)
         wfile.flush()
         wfile.close()
