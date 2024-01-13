@@ -96,6 +96,15 @@ class Response:
         )
 
 
+class HTTP200OKResponse(Response):
+    def __init__(
+        self,
+        headers: dict[str, str] | None = None,
+        body: bytes | None = None
+    ):
+        super().__init__(status=200, reason='OK', headers=headers, body=body)
+
+
 class HTTProtocol:
     MAX_LINE = 64 * 1024
     MAX_HEADERS = 100

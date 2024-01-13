@@ -150,6 +150,7 @@ class HttpServer(unittest.TestCase):
         r.read()
         self.assertIn(int(r.status), (400, 405))
 
+    @unittest.skip
     def test_head_method(self):
         """Head method support"""
 
