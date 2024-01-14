@@ -1,8 +1,10 @@
+import logging
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from server.handler import BaseHTTPHandler, StaticHandler
+from server.logger import init_logging
 from server.protocol import (
     HTTP500InternalServerError,
     HTTPError,
@@ -10,6 +12,9 @@ from server.protocol import (
     Request,
     Response,
 )
+
+init_logging()
+logger = logging.getLogger(__name__)
 
 
 class HTTPServer:
@@ -35,9 +40,12 @@ class HTTPServer:
             self._thread_pool = ThreadPoolExecutor(max_workers=self._workers)
             self._static_handler = StaticHandler(self._document_root)
 
+            logger.info(
+                'Server %s:%s is ready to accept client connections',
+                self._host, self._port
+            )
             while True:
                 client_sock = self._accept_client_connection()
-                print('Got new client!')
                 self._thread_pool.submit(self._serve_client, client_sock)
         else:
             raise RuntimeError('Server is already running')
@@ -47,7 +55,7 @@ class HTTPServer:
         try:
             self._thread_pool.shutdown()
         except KeyboardInterrupt:
-            print('Immediate shutdown')
+            logger.info('Immediate shutdown')
             self._thread_pool.shutdown(wait=False)
 
     def _check_document_root(self):
@@ -77,9 +85,8 @@ class HTTPServer:
         try:
             rfile = client_sock.makefile('rb')
             request = HTTProtocol.get_request(rfile)
-            print(f'Request is {request}')
             response = self._handle_request(request)
-            print(f'Response is {response}')
+            logger.info('Request: %s.\nResponse: %s', request, response)
             self._send_response(response, client_sock)
         except ConnectionResetError:
             client_sock = None

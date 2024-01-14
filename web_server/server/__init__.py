@@ -1,6 +1,11 @@
+import logging
 from pathlib import Path
 
 from server.http_server import HTTPServer
+from server.logger import init_logging
+
+init_logging()
+logger = logging.getLogger(__name__)
 
 
 def run_server(
@@ -14,5 +19,5 @@ def run_server(
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print('Gracefully shutdown')
+        logger.info('Gracefully shutdown')
         server.shutdown()
