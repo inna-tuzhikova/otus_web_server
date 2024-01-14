@@ -33,7 +33,7 @@ class HTTPServer:
         self._thread_pool: ThreadPoolExecutor | None = None
         self._static_handler: BaseHTTPHandler | None = None
 
-    def serve_forever(self):
+    def serve_forever(self) -> None:
         if self._server_sock is None:
             self._check_document_root()
             self._server_sock = self._create_server_socket()
@@ -50,7 +50,7 @@ class HTTPServer:
         else:
             raise RuntimeError('Server is already running')
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self._server_sock.close()
         try:
             self._thread_pool.shutdown()
@@ -58,7 +58,7 @@ class HTTPServer:
             logger.info('Immediate shutdown')
             self._thread_pool.shutdown(wait=False)
 
-    def _check_document_root(self):
+    def _check_document_root(self) -> None:
         if self._document_root.is_file() or not self._document_root.is_dir():
             raise NotADirectoryError(
                 f'Document root {self._document_root} is not an existing dir. '
@@ -83,8 +83,8 @@ class HTTPServer:
 
     def _serve_client(self, client_sock: socket.socket) -> None:
         try:
-            rfile = client_sock.makefile('rb')
-            request = HTTProtocol.get_request(rfile)
+            reader = client_sock.makefile('rb')
+            request = HTTProtocol.get_request(reader)
             response = self._handle_request(request)
             logger.info('Request: %s.\nResponse: %s', request, response)
             self._send_response(response, client_sock)
@@ -108,8 +108,8 @@ class HTTPServer:
         response: Response,
         client_sock: socket.socket
     ) -> None:
-        wfile = client_sock.makefile('wb')
-        HTTProtocol.send_response(response, wfile)
+        writer = client_sock.makefile('wb')
+        HTTProtocol.send_response(response, writer)
 
     def _send_error(self, err: Exception, client_sock: socket.socket) -> None:
         if isinstance(err, HTTPError):

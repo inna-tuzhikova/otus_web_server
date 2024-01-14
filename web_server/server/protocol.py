@@ -1,4 +1,5 @@
 import enum
+from io import BufferedReader, BufferedWriter
 
 
 class HTTPMethod(enum.Enum):
@@ -22,7 +23,12 @@ class HTTPVersion(enum.Enum):
 
 
 class HTTPError(Exception):
-    def __init__(self, status: int, reason: str, body=None):
+    def __init__(
+        self,
+        status: int,
+        reason: str,
+        body: bytes | str | None = None
+    ):
         super()
         self.status = status
         self.reason = reason
@@ -30,27 +36,27 @@ class HTTPError(Exception):
 
 
 class HTTP400BadRequest(HTTPError):
-    def __init__(self, body=None):
+    def __init__(self, body: bytes | str | None = None):
         super().__init__(status=400, reason='Bad Request', body=body)
 
 
 class HTTP403Forbidden(HTTPError):
-    def __init__(self, body=None):
+    def __init__(self, body: bytes | str | None = None):
         super().__init__(status=403, reason='Forbidden', body=body)
 
 
 class HTTP404NotFound(HTTPError):
-    def __init__(self, body=None):
+    def __init__(self, body: bytes | str | None = None):
         super().__init__(status=404, reason='Not Found', body=body)
 
 
 class HTTP405MethodNotAllowed(HTTPError):
-    def __init__(self, body=None):
+    def __init__(self, body: bytes | str | None = None):
         super().__init__(status=405, reason='Method Not Allowed', body=body)
 
 
 class HTTP500InternalServerError(HTTPError):
-    def __init__(self, body=None):
+    def __init__(self, body: bytes | str | None = None):
         super().__init__(status=500, reason='Internal Server Error', body=body)
 
 
@@ -69,7 +75,7 @@ class Request:
         self.headers = headers
         self.body = body
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f'{self.method.value} {self.uri} {self.version.value}\n'
             f'headers: {self.headers}'
@@ -82,14 +88,14 @@ class Response:
         status: int,
         reason: str,
         headers: dict[str, str] | None = None,
-        body: bytes | None = None
+        body: bytes | str | None = None
     ):
         self.status = status
         self.reason = reason
         self.headers = headers
         self.body = body
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f'{HTTPVersion.HTTP_1_1.value} {self.status} {self.reason}\n'
             f'headers: {self.headers}'
@@ -100,7 +106,7 @@ class HTTP200OKResponse(Response):
     def __init__(
         self,
         headers: dict[str, str] | None = None,
-        body: bytes | None = None
+        body: bytes | str | None = None
     ):
         super().__init__(status=200, reason='OK', headers=headers, body=body)
 
@@ -111,9 +117,9 @@ class HTTProtocol:
     META_ENCODING = 'iso-8859-1'
 
     @staticmethod
-    def get_request(rfile) -> Request:
-        method, uri, version = HTTProtocol._parse_starting_line(rfile)
-        headers = HTTProtocol._parse_headers(rfile)
+    def get_request(reader: BufferedReader) -> Request:
+        method, uri, version = HTTProtocol._parse_starting_line(reader)
+        headers = HTTProtocol._parse_headers(reader)
         if not headers.get('Host'):
             raise HTTP400BadRequest(body='Invalid headers: no `Host` header')
         return Request(
@@ -124,32 +130,34 @@ class HTTProtocol:
         )
 
     @staticmethod
-    def send_response(response: Response, wfile) -> None:
+    def send_response(response: Response, writer: BufferedWriter) -> None:
         starting_line = (
             f'{HTTPVersion.HTTP_1_1.value} '
             f'{response.status} '
             f'{response.reason}'
             f'\r\n'
         )
-        wfile.write(starting_line.encode(HTTProtocol.META_ENCODING))
+        writer.write(starting_line.encode(HTTProtocol.META_ENCODING))
         if not response.headers:
             response.headers = dict()
         response.headers['Server'] = 'python'
         for k, v in response.headers.items():
             header_line = f'{k}: {v}\r\n'
-            wfile.write(header_line.encode(HTTProtocol.META_ENCODING))
+            writer.write(header_line.encode(HTTProtocol.META_ENCODING))
 
-        wfile.write(b'\r\n')
+        writer.write(b'\r\n')
         if response.body:
             if isinstance(response.body, str):
                 response.body = response.body.encode(HTTProtocol.META_ENCODING)
-            wfile.write(response.body)
-        wfile.flush()
-        wfile.close()
+            writer.write(response.body)
+        writer.flush()
+        writer.close()
 
     @staticmethod
-    def _parse_starting_line(rfile) -> tuple[HTTPMethod, str, HTTPVersion]:
-        raw_bytes = rfile.readline(HTTProtocol.MAX_LINE + 1)
+    def _parse_starting_line(
+        reader: BufferedReader
+    ) -> tuple[HTTPMethod, str, HTTPVersion]:
+        raw_bytes = reader.readline(HTTProtocol.MAX_LINE + 1)
         if len(raw_bytes) > HTTProtocol.MAX_LINE:
             raise HTTP400BadRequest(body='Request starting line is too long')
 
@@ -175,10 +183,10 @@ class HTTProtocol:
         return method, uri, version
 
     @staticmethod
-    def _parse_headers(rfile):
+    def _parse_headers(reader: BufferedReader) -> dict[str, str]:
         headers = []
         while True:
-            line = rfile.readline(HTTProtocol.MAX_LINE + 1)
+            line = reader.readline(HTTProtocol.MAX_LINE + 1)
             if len(line) > HTTProtocol.MAX_LINE:
                 raise HTTP400BadRequest(body='Request line is too long')
             if line in (b'\r\n', b'\n', b''):

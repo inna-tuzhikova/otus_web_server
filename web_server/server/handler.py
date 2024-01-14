@@ -161,7 +161,7 @@ class StaticHandler(BaseHTTPHandler):
     ) -> Response:
         return self._get_file_response(uri, need_body=False)
 
-    def _get_file_response(self, uri: str, need_body: bool):
+    def _get_file_response(self, uri: str, need_body: bool) -> Response:
         end_slash = uri.endswith('/')
         path = (self._document_root / uri.lstrip('/')).resolve()
         if not self._is_in_root(path):
@@ -177,7 +177,7 @@ class StaticHandler(BaseHTTPHandler):
         else:
             raise HTTP404NotFound
 
-    def _is_in_root(self, path: Path):
+    def _is_in_root(self, path: Path) -> bool:
         result = True
         try:
             path.relative_to(self._document_root)
@@ -185,7 +185,7 @@ class StaticHandler(BaseHTTPHandler):
             result = False
         return result
 
-    def _prepare_file_response(self, path: Path, need_body: bool):
+    def _prepare_file_response(self, path: Path, need_body: bool) -> Response:
         if path.is_file():
             if need_body:
                 with open(path, 'rb') as f:
