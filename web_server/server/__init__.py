@@ -14,6 +14,14 @@ def run_server(
     workers: int,
     document_root: Path
 ):
+    """Runs HTTP server on given host and port
+
+    Args:
+        host (str): host to run server
+        port (int): port to run server
+        workers (int): number of threads to process requests
+        document_root (Path): root path to serve static files
+    """
     server = HTTPServer(host, port, workers, document_root)
 
     try:

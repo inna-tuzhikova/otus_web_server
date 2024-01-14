@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class HTTPServer:
+    """Multithreading HTTP socket server"""
+
     def __init__(
         self,
         host: str,
@@ -34,6 +36,7 @@ class HTTPServer:
         self._static_handler: BaseHTTPHandler | None = None
 
     def serve_forever(self) -> None:
+        """Runs server and serves client connections"""
         if self._server_sock is None:
             self._check_document_root()
             self._server_sock = self._create_server_socket()
@@ -51,6 +54,7 @@ class HTTPServer:
             raise RuntimeError('Server is already running')
 
     def shutdown(self) -> None:
+        """Closes server socket and waits for running requests to be resolved"""
         self._server_sock.close()
         try:
             self._thread_pool.shutdown()

@@ -3,6 +3,8 @@ from io import BufferedReader, BufferedWriter
 
 
 class HTTPMethod(enum.Enum):
+    """HTTP methods"""
+
     OPTIONS = 'OPTIONS'
     GET = 'GET'
     HEAD = 'HEAD'
@@ -15,6 +17,8 @@ class HTTPMethod(enum.Enum):
 
 
 class HTTPVersion(enum.Enum):
+    """HTTP versions"""
+
     HTTP_0_9 = 'HTTP/0.9'
     HTTP_1_0 = 'HTTP/1.0'
     HTTP_1_1 = 'HTTP/1.1'
@@ -23,6 +27,8 @@ class HTTPVersion(enum.Enum):
 
 
 class HTTPError(Exception):
+    """Base HTTP error"""
+
     def __init__(
         self,
         status: int,
@@ -36,31 +42,43 @@ class HTTPError(Exception):
 
 
 class HTTP400BadRequest(HTTPError):
+    """HTTP error with status code 400 Bad Request"""
+
     def __init__(self, body: bytes | str | None = None):
         super().__init__(status=400, reason='Bad Request', body=body)
 
 
 class HTTP403Forbidden(HTTPError):
+    """HTTP error with status code 403 Forbidden"""
+
     def __init__(self, body: bytes | str | None = None):
         super().__init__(status=403, reason='Forbidden', body=body)
 
 
 class HTTP404NotFound(HTTPError):
+    """HTTP error with status code 404 Not Found"""
+
     def __init__(self, body: bytes | str | None = None):
         super().__init__(status=404, reason='Not Found', body=body)
 
 
 class HTTP405MethodNotAllowed(HTTPError):
+    """HTTP error with status code 405 Method Not Allowed"""
+
     def __init__(self, body: bytes | str | None = None):
         super().__init__(status=405, reason='Method Not Allowed', body=body)
 
 
 class HTTP500InternalServerError(HTTPError):
+    """HTTP error with status code 500 Internal Server Error"""
+
     def __init__(self, body: bytes | str | None = None):
         super().__init__(status=500, reason='Internal Server Error', body=body)
 
 
 class Request:
+    """Client HTTP request"""
+
     def __init__(
         self,
         method: HTTPMethod,
@@ -83,6 +101,8 @@ class Request:
 
 
 class Response:
+    """HTTP response to client"""
+
     def __init__(
         self,
         status: int,
@@ -103,6 +123,8 @@ class Response:
 
 
 class HTTP200OKResponse(Response):
+    """HTTP response with status code 200 OK"""
+
     def __init__(
         self,
         headers: dict[str, str] | None = None,
@@ -112,12 +134,15 @@ class HTTP200OKResponse(Response):
 
 
 class HTTProtocol:
+    """Static class for making io operations with HTTP format"""
+
     MAX_LINE = 64 * 1024
     MAX_HEADERS = 100
     META_ENCODING = 'iso-8859-1'
 
     @staticmethod
     def get_request(reader: BufferedReader) -> Request:
+        """Reads, parses and transforms client HTTP request"""
         method, uri, version = HTTProtocol._parse_starting_line(reader)
         headers = HTTProtocol._parse_headers(reader)
         if not headers.get('Host'):
@@ -131,6 +156,7 @@ class HTTProtocol:
 
     @staticmethod
     def send_response(response: Response, writer: BufferedWriter) -> None:
+        """Sends HTTP response to client"""
         starting_line = (
             f'{HTTPVersion.HTTP_1_1.value} '
             f'{response.status} '

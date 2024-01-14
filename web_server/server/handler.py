@@ -17,7 +17,10 @@ from server.protocol import (
 
 
 class BaseHTTPHandler:
+    """Base class for HTTP requests handling"""
+
     def __call__(self, request: Request) -> Response:
+        """Routes request to specific handler based on HTTP method"""
         parsed_uri = urlparse(request.uri)
         query = parse_qs(parsed_uri.query)
         if request.method == HTTPMethod.OPTIONS:
@@ -64,6 +67,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method OPTIONS"""
         raise HTTP405MethodNotAllowed
 
     def get(
@@ -72,6 +76,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method GET"""
         raise HTTP405MethodNotAllowed
 
     def head(
@@ -80,6 +85,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method HEAD"""
         raise HTTP405MethodNotAllowed
 
     def post(
@@ -88,6 +94,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method POST"""
         raise HTTP405MethodNotAllowed
 
     def put(
@@ -96,6 +103,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method PUT"""
         raise HTTP405MethodNotAllowed
 
     def patch(
@@ -104,6 +112,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method PATCH"""
         raise HTTP405MethodNotAllowed
 
     def delete(
@@ -112,6 +121,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method DELETE"""
         raise HTTP405MethodNotAllowed
 
     def trace(
@@ -120,6 +130,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method TRACE"""
         raise HTTP405MethodNotAllowed
 
     def connect(
@@ -128,6 +139,7 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with method CONNECT"""
         raise HTTP405MethodNotAllowed
 
     def unknown_method_handler(
@@ -136,12 +148,15 @@ class BaseHTTPHandler:
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Processes requests with unknown method"""
         raise HTTP405MethodNotAllowed(
             body=f'Unknown method: {request.method.value}'
         )
 
 
 class StaticHandler(BaseHTTPHandler):
+    """Handlers for static file requests from DOCUMENT_ROOT"""
+
     def __init__(self, document_root: Path):
         self._document_root = document_root.resolve()
 
@@ -151,6 +166,7 @@ class StaticHandler(BaseHTTPHandler):
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Returns file response for given uri"""
         return self._get_file_response(uri, need_body=True)
 
     def head(
@@ -159,6 +175,7 @@ class StaticHandler(BaseHTTPHandler):
         uri: str,
         query: dict[str, list]
     ) -> Response:
+        """Returns file meta response for given uri"""
         return self._get_file_response(uri, need_body=False)
 
     def _get_file_response(self, uri: str, need_body: bool) -> Response:
