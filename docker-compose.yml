@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  http_server:
+    container_name: "http_server"
+    image: http_server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      N_WORKERS: 5
+      SERVICE_HOST: "0.0.0.0"
+      SERVICE_PORT: 80
+    volumes:
+        - .:/app

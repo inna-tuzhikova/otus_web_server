@@ -173,10 +173,10 @@ class HttpServer(unittest.TestCase):
         self.assertTrue(len(headers) > 0, 'no headers found')
 
         status_line = headers.pop(0)
-        (proto, code, status) = status_line.split(b' ')
+        (proto, code, status) = status_line.split(b' ', 2)
         h = {}
         for k, v in enumerate(headers):
-            (name, value) = re.split(r'\s*:\s*', v, 1)
+            (name, value) = re.split(b'\s*:\s*', v, 1)
             h[name] = value
         if int(code) == 200:
             self.assertEqual(int(h[b'Content-Length']), 38)
